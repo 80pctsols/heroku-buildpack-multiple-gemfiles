@@ -32,72 +32,17 @@ function indent() {
 }
 
 # The heroku ruby buildpack will have already installed the gems for the default Gemfile, so now
-# install the missing gems from Gemfile_next.
-echo "-----> Installing Gemfile_next gems"
+# install the missing gems from que-1-gemfile/Gemfile.
+echo "-----> Installing que-1-gemfile/Gemfile gems"
 cd $BUILD_DIR
 bundle_without="development:test"
 set -o pipefail # Enable pipefail so failure exit code from bundle install will not be lost by pipe to indent.
-BUNDLE_GEMFILE=Gemfile_next bundle install --without $bundle_without --path vendor/bundle --binstubs vendor/bundle/bin -j4 --deployment | indent
+BUNDLE_GEMFILE=que-1-gemfile/Gemfile bundle install --without $bundle_without --path vendor/bundle --binstubs vendor/bundle/bin -j4 --deployment | indent
 bundle_install_status=$?
 set +o pipefail # Disable pipefail, only needed for above command as it is pipes to indent.
 
 if [ $bundle_install_status -ne 0 ]; then
-  error "bundle install error: This can happen when Gemfile_next.lock falls out of sync with Gemfile_next. Check the committed Gemfile_next.lock is up-to-date."
+  error "bundle install error: This can happen when que-1-gemfile/Gemfile.lock falls out of sync with que-1-gemfile/Gemfile. Check the committed que-1-gemfile/Gemfile.lock is up-to-date."
 fi
-
-echo "-----> Writing .profile.d/multiple-gemfiles.sh to run on dyno startup"
-mkdir -p .profile.d
-cat<<\EOF > .profile.d/multiple-gemfiles.sh
-server_id=$DYNO
-
-echo "[multiple-gemfiles.sh] Preparing env vars for server: $server_id"
-echo "---------------------> Unsetting DEPENDENCIES_NEXT"
-unset DEPENDENCIES_NEXT
-echo "---------------------> Unsetting BUNDLE_GEMFILE"
-unset BUNDLE_GEMFILE
-
-# DEPENDENCIES_NEXT_DYNOS is a comma-separated string of dynos that should use Gemfile_next,
-# and glob wildcards can be used in the following ways:
-#     * => matches all dynos (*.* also works the same)
-# web.* => matches all web dynos
-#   *.2 => matches all dynos with index 2, e.g. web.2, worker.2, resque.2, etc.
-#
-# Examples:
-#               Selected dynos only: DEPENDENCIES_NEXT_DYNOS=web.9,web.10,worker.10,resque.3
-#                         All dynos: DEPENDENCIES_NEXT_DYNOS=*
-#   All scheduler and one-off dynos: DEPENDENCIES_NEXT_DYNOS=scheduler.*,run.*
-# web.1, web.2 and all worker dynos: DEPENDENCIES_NEXT_DYNOS=web.1,web.2,worker.*
-#           All index 1 and 2 dynos: DEPENDENCIES_NEXT_DYNOS=*.1,*.2
-next_server_ids=$DEPENDENCIES_NEXT_DYNOS
-
-function is_next_server() {
-  # Split on comma into next_servers array
-  IFS=',' # set comma as delimiter
-  read -ra next_servers <<< "$next_server_ids" # split on comma delimiter
-
-  for next_server in "${next_servers[@]}"; do
-    # This supports glob matching (*)
-    if [[ "$server_id" == $next_server ]]; then
-      # matches => this server will use Gemfile_next.
-      true
-      return
-    fi
-  done
-
-  # No match => this server will use Gemfile.
-  false
-  return
-}
-
-if [ -n "$next_server_ids" ]; then
-  if is_next_server; then
-    echo "---------------------> Setting DEPENDENCIES_NEXT=true"
-    export DEPENDENCIES_NEXT=true
-    echo "---------------------> Setting BUNDLE_GEMFILE=$HOME/Gemfile_next"
-    export BUNDLE_GEMFILE=$HOME/Gemfile_next
-  fi
-fi
-
-EOF
 
 echo "-----> Multiple Gemfiles done"
