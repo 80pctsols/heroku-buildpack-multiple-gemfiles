@@ -32,18 +32,18 @@ function indent() {
 }
 
 # The heroku ruby buildpack will have already installed the gems for the default Gemfile, so now
-# install the missing gems from que-1-gemfile/Gemfile.
-echo "-----> Installing que-1-gemfile/Gemfile gems"
+# install the missing gems from Gemfile_que1.
+echo "-----> Installing Gemfile_que1 gems"
 cd $BUILD_DIR
 bundle_without="development:test"
 set -o pipefail # Enable pipefail so failure exit code from bundle install will not be lost by pipe to indent.
-echo "BUNDLE_GEMFILE=que-1-gemfile/Gemfile BUNDLE_WITHOUT=$bundle_without BUNDLE_PATH=$HOME/vendor/bundle BUNDLE_BIN=$HOME/vendor/bundle/bin BUNDLE_DEPLOYMENT=1 bundle install -j4"
-BUNDLE_GEMFILE=que-1-gemfile/Gemfile BUNDLE_WITHOUT=$bundle_without BUNDLE_PATH=$HOME/vendor/bundle BUNDLE_BIN=$HOME/vendor/bundle/bin BUNDLE_DEPLOYMENT=1 bundle install -j4 | indent
+echo "BUNDLE_GEMFILE=Gemfile_que1 BUNDLE_WITHOUT=$bundle_without BUNDLE_PATH=$HOME/vendor/bundle BUNDLE_BIN=$HOME/vendor/bundle/bin BUNDLE_DEPLOYMENT=1 bundle install -j4"
+BUNDLE_GEMFILE=Gemfile_que1 BUNDLE_WITHOUT=$bundle_without BUNDLE_PATH=$HOME/vendor/bundle BUNDLE_BIN=$HOME/vendor/bundle/bin BUNDLE_DEPLOYMENT=1 bundle install -j4 | indent
 bundle_install_status=$?
 set +o pipefail # Disable pipefail, only needed for above command as it is pipes to indent.
 
 if [ $bundle_install_status -ne 0 ]; then
-  error "bundle install error: This can happen when que-1-gemfile/Gemfile.lock falls out of sync with que-1-gemfile/Gemfile. Check the committed que-1-gemfile/Gemfile.lock is up-to-date."
+  error "bundle install error: This can happen when Gemfile_que1.lock falls out of sync with Gemfile_que1. Check the committed Gemfile_que1.lock is up-to-date."
 fi
 
 echo "-----> Multiple Gemfiles done"
